@@ -92,6 +92,12 @@ body {
   color: #0b6d3c;
 }
 
+.runtime-notice {
+  margin: 0.15rem 0 0.5rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
 .hud {
   font-weight: 700;
   margin-bottom: 0.55rem;
@@ -279,6 +285,32 @@ body {
 
 .status-line {
   margin-top: 0.5rem;
+}
+
+.runtime-log-panel {
+  margin-top: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 0.6rem 0.75rem;
+}
+
+.runtime-log-panel h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.runtime-log-panel ul {
+  margin: 0;
+  padding-left: 1rem;
+  max-height: 170px;
+  overflow: auto;
+}
+
+.runtime-log-panel li {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.78rem;
+  line-height: 1.25rem;
 }
 
 @keyframes player-run {

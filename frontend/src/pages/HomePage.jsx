@@ -227,18 +227,53 @@ export default function HomePage() {
   const frameRef = useRef(0);
   const lastTimeRef = useRef(0);
   const keysRef = useRef(new Set());
+  const noticeTimerRef = useRef(0);
   const gameRef = useRef(buildLevel(1, 3, 0));
   const [game, setGame] = useState(gameRef.current);
   const [mode, setMode] = useState("menu");
   const [loadingSave, setLoadingSave] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [runtimeNotice, setRuntimeNotice] = useState("");
+  const [runtimeLogs, setRuntimeLogs] = useState([]);
+
+  function logClientEvent(event, details = {}) {
+    const time = new Date().toISOString();
+    console.log(`[frontend-game][${time}] ${event}`, details);
+    const logLine = `${new Date().toLocaleTimeString()} ${event} ${JSON.stringify(details)}`;
+    const entry = { id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`, text: logLine };
+    setRuntimeLogs((prev) => [entry, ...prev].slice(0, 10));
+  }
+
+  function showRuntimeNotice(message) {
+    setRuntimeNotice(message);
+    clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => {
+      setRuntimeNotice("");
+    }, 1400);
+  }
 
   useEffect(() => {
+    const keyNameMap = {
+      arrowup: "ArrowUp",
+      arrowdown: "ArrowDown",
+      arrowleft: "ArrowLeft",
+      arrowright: "ArrowRight"
+    };
+
     function onKeyDown(event) {
-      keysRef.current.add(event.key.toLowerCase());
+      const key = event.key.toLowerCase();
+      keysRef.current.add(key);
+      if (keyNameMap[key]) {
+        showRuntimeNotice(`触发了JS代码：${keyNameMap[key]}`);
+        logClientEvent("keyboard:arrow-keydown", { key: keyNameMap[key], mode });
+      }
     }
     function onKeyUp(event) {
-      keysRef.current.delete(event.key.toLowerCase());
+      const key = event.key.toLowerCase();
+      keysRef.current.delete(key);
+      if (keyNameMap[key]) {
+        logClientEvent("keyboard:arrow-keyup", { key: keyNameMap[key], mode });
+      }
     }
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -246,7 +281,9 @@ export default function HomePage() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, []);
+  }, [mode]);
+
+  useEffect(() => () => clearTimeout(noticeTimerRef.current), []);
 
   useEffect(() => {
     if (mode !== "playing") {
@@ -288,7 +325,14 @@ export default function HomePage() {
     try {
       setLoadingSave(true);
       setSaveMessage("");
-      const data = await loadGameSave();
+      logClientEvent("save:load:start");
+      const data = await loadGameSave({
+        onBackendTrigger: ({ method, path }) => {
+          showRuntimeNotice("触发了后端");
+          logClientEvent("backend:triggered", { method, path });
+        }
+      });
+      logClientEvent("save:load:success", { exists: data.exists });
       if (!data.exists || !data.state) {
         setSaveMessage("没有找到存档，请先开始新游戏。");
         return;
@@ -299,6 +343,9 @@ export default function HomePage() {
       setGame(loaded);
       setMode("playing");
     } catch (err) {
+      logClientEvent("save:load:error", {
+        message: err instanceof Error ? err.message : "读取存档失败"
+      });
       setSaveMessage(err instanceof Error ? err.message : "读取存档失败");
     } finally {
       setLoadingSave(false);
@@ -307,13 +354,20 @@ export default function HomePage() {
 
   async function saveProgress() {
     try {
-      await saveGame({
-        level: game.level,
-        lives: game.lives,
-        coins: game.coins
+      const payload = { level: game.level, lives: game.lives, coins: game.coins };
+      logClientEvent("save:write:start", payload);
+      await saveGame(payload, {
+        onBackendTrigger: ({ method, path }) => {
+          showRuntimeNotice("触发了后端");
+          logClientEvent("backend:triggered", { method, path });
+        }
       });
+      logClientEvent("save:write:success");
       setSaveMessage("存档成功。");
     } catch (err) {
+      logClientEvent("save:write:error", {
+        message: err instanceof Error ? err.message : "存档失败"
+      });
       setSaveMessage(err instanceof Error ? err.message : "存档失败");
     }
   }
@@ -350,6 +404,7 @@ export default function HomePage() {
       </div>
 
       {saveMessage && <p className="save-message">{saveMessage}</p>}
+      {runtimeNotice && <p className="runtime-notice">{runtimeNotice}</p>}
 
       <div className="hud">{hud}</div>
 
@@ -414,6 +469,14 @@ export default function HomePage() {
       </div>
 
       <p className="status-line">{game.statusText}</p>
+      <div className="runtime-log-panel">
+        <h4>前端运行日志（最近 10 条）</h4>
+        <ul>
+          {runtimeLogs.map((log) => (
+            <li key={log.id}>{log.text}</li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
