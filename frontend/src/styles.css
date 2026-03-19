@@ -1,0 +1,376 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: #111827;
+  background: #f9fafb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: #111827;
+  color: #f9fafb;
+}
+
+.nav {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.nav a {
+  color: #f9fafb;
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.nav a:hover {
+  background: #374151;
+}
+
+.main {
+  padding: 1.5rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+.game-page {
+  max-width: 980px;
+}
+
+.game-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.game-toolbar button {
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.game-toolbar button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-message {
+  min-height: 1.25rem;
+  margin: 0.2rem 0 0.6rem;
+  color: #0b6d3c;
+}
+
+.runtime-notice {
+  margin: 0.15rem 0 0.5rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.hud {
+  font-weight: 700;
+  margin-bottom: 0.55rem;
+}
+
+.viewport {
+  position: relative;
+  width: 900px;
+  max-width: 100%;
+  height: 360px;
+  border: 2px solid #111827;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom) 68%, var(--grass-color) 68%);
+}
+
+.world {
+  position: absolute;
+  height: 100%;
+  will-change: transform;
+}
+
+.ground {
+  position: absolute;
+  height: 52px;
+  background: linear-gradient(#8f6138, var(--ground-color));
+  box-shadow: inset 0 8px 0 rgb(255 255 255 / 12%);
+}
+
+.platform {
+  position: absolute;
+  border-radius: 8px;
+  background: linear-gradient(#c48747, var(--platform-color));
+  box-shadow: inset 0 4px 0 rgb(255 255 255 / 20%);
+}
+
+.platform-moving {
+  outline: 2px solid rgb(255 255 255 / 35%);
+  animation: platform-glow 1.2s ease-in-out infinite;
+}
+
+.pit {
+  position: absolute;
+  height: 52px;
+  border-radius: 0 0 12px 12px;
+  background: radial-gradient(circle at 50% 30%, #1f2937, #020617 70%);
+  box-shadow: inset 0 7px 10px rgb(0 0 0 / 45%);
+}
+
+.player {
+  position: absolute;
+  border-radius: 8px 8px 6px 6px;
+  background: linear-gradient(#f87171 0 56%, #1f2937 56% 100%);
+  border: 2px solid #111827;
+  transform-origin: center bottom;
+  --face: 1;
+  transform: scaleX(var(--face));
+}
+
+.player::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 3px;
+  width: 18px;
+  height: 8px;
+  border-radius: 8px 8px 2px 2px;
+  background: #dc2626;
+  border: 2px solid #111827;
+}
+
+.player-eye {
+  position: absolute;
+  right: 4px;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #111827;
+}
+
+.player.is-right {
+  --face: 1;
+}
+
+.player.is-left {
+  --face: -1;
+}
+
+.player.is-running {
+  animation: player-run 0.32s steps(2) infinite;
+}
+
+.player.is-idle {
+  animation: player-idle 1s ease-in-out infinite;
+}
+
+.player.is-jumping {
+  animation: player-jump 0.28s ease-in-out infinite;
+}
+
+.enemy {
+  position: absolute;
+  border-radius: 10px;
+  border: 2px solid #111827;
+  transform-origin: center bottom;
+}
+
+.enemy::before,
+.enemy::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #111827;
+}
+
+.enemy::before {
+  left: 5px;
+}
+
+.enemy::after {
+  right: 5px;
+}
+
+.enemy-goomba {
+  background: linear-gradient(#f59e0b, #b45309);
+  animation: enemy-walk 0.5s steps(2) infinite;
+}
+
+.enemy-bat {
+  background: linear-gradient(#a78bfa, #6d28d9);
+  border-radius: 12px 12px 5px 5px;
+  animation: enemy-fly 0.45s ease-in-out infinite;
+}
+
+.enemy-bat::before,
+.enemy-bat::after {
+  top: -2px;
+  width: 8px;
+  height: 8px;
+  background: #7c3aed;
+  border-radius: 2px 8px 2px 8px;
+}
+
+.coin {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fbbf24;
+  border: 2px solid #92400e;
+}
+
+.goal {
+  position: absolute;
+  width: 20px;
+  height: 80px;
+  background: repeating-linear-gradient(45deg, #ffffff, #ffffff 8px, #e5e7eb 8px, #e5e7eb 16px);
+  border: 2px solid #111827;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 52%);
+  color: #ffffff;
+  text-align: center;
+  padding: 1rem;
+}
+
+.overlay button {
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.status-line {
+  margin-top: 0.5rem;
+}
+
+.runtime-log-panel {
+  margin-top: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 0.6rem 0.75rem;
+}
+
+.runtime-log-panel h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.runtime-log-panel ul {
+  margin: 0;
+  padding-left: 1rem;
+  max-height: 170px;
+  overflow: auto;
+}
+
+.runtime-log-panel li {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.78rem;
+  line-height: 1.25rem;
+}
+
+@keyframes player-run {
+  0% {
+    transform: translateY(0) scaleX(var(--face));
+  }
+  50% {
+    transform: translateY(-2px) scaleX(var(--face));
+  }
+  100% {
+    transform: translateY(0) scaleX(var(--face));
+  }
+}
+
+@keyframes player-idle {
+  0%,
+  100% {
+    transform: translateY(0) scaleX(var(--face));
+  }
+  50% {
+    transform: translateY(-1px) scaleX(var(--face));
+  }
+}
+
+@keyframes player-jump {
+  0%,
+  100% {
+    transform: translateY(0) scaleX(var(--face));
+  }
+  50% {
+    transform: translateY(-3px) scaleX(var(--face));
+  }
+}
+
+@keyframes enemy-walk {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.92);
+  }
+}
+
+@keyframes enemy-fly {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08, 0.94);
+  }
+}
+
+@keyframes platform-glow {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
