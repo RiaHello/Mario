@@ -180,6 +180,25 @@ function makeCoins(level, platforms, worldWidth) {
   return [...platformCoins, ...groundCoins];
 }
 
+function makeScenery(level, worldWidth) {
+  const clouds = [];
+  const bushes = [];
+  for (let i = 0; i < worldWidth; i += 250) {
+    clouds.push({
+      x: i + (Math.sin(i * 0.01 + level) * 50),
+      y: 30 + (Math.cos(i * 0.02) * 40),
+      size: 0.8 + Math.abs(Math.sin(i)) * 0.6
+    });
+    if (Math.abs(Math.cos(i * 0.03 + level)) > 0.3) {
+      bushes.push({
+        x: i + 100 + (Math.sin(i * 0.05) * 50),
+        size: 0.7 + Math.abs(Math.cos(i)) * 0.5
+      });
+    }
+  }
+  return { clouds, bushes };
+}
+
 function buildLevel(level, lives, coins) {
   const worldWidth = 1800 + level * 260;
   const platforms = makePlatforms(level).map((platform) => ({
@@ -192,6 +211,7 @@ function buildLevel(level, lives, coins) {
   const enemies = makeEnemies(level);
   const pits = makePits(level, worldWidth);
   const coinSpots = makeCoins(level, platforms, worldWidth);
+  const scenery = makeScenery(level, worldWidth);
   const theme = getTheme(level);
   const mechanic = getMechanicLabel(level);
 
@@ -214,11 +234,15 @@ function buildLevel(level, lives, coins) {
       onGround: true,
       facing: 1
     },
+    scenery,
     platforms,
     enemies,
     pits,
     coinsOnMap: coinSpots.map((coin, idx) => ({ ...coin, id: `${level}-${idx}`, collected: false })),
+    floatingTexts: [],
     cameraX: 0,
+    levelComplete: false,
+    completeTimer: 0,
     statusText: `第 ${level} 关：${theme.name}（机制：${mechanic}）`
   };
 }
@@ -257,11 +281,17 @@ export default function HomePage() {
       arrowup: "ArrowUp",
       arrowdown: "ArrowDown",
       arrowleft: "ArrowLeft",
-      arrowright: "ArrowRight"
+      arrowright: "ArrowRight",
+      " ": "Space"
     };
 
     function onKeyDown(event) {
       const key = event.key.toLowerCase();
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) {
+        if (mode === "playing") {
+          event.preventDefault();
+        }
+      }
       keysRef.current.add(key);
       if (keyNameMap[key]) {
         showRuntimeNotice(`触发了JS代码：${keyNameMap[key]}`);
@@ -377,10 +407,13 @@ export default function HomePage() {
     setSaveMessage("");
   }
 
-  const hud = useMemo(
-    () =>
-      `关卡 ${game.level}（${game.theme.name}） | 机制 ${game.mechanic} | 生命 ${game.lives} | 金币 ${game.coins}`,
-    [game.level, game.theme.name, game.mechanic, game.lives, game.coins]
+  const hud = (
+    <div className="hud">
+      <div className="hud-stat">🚩 关卡 {game.level} <span className="hud-theme">({game.theme.name})</span></div>
+      <div className="hud-stat">❤️ 生命 {game.lives}</div>
+      <div className="hud-stat">🪙 金币 {game.coins}</div>
+      <div className="hud-stat">⚙️ 机制: {game.mechanic}</div>
+    </div>
   );
   const playerPose =
     !game.player.onGround ? "is-jumping" : Math.abs(game.player.vx) > 10 ? "is-running" : "is-idle";
@@ -418,6 +451,16 @@ export default function HomePage() {
           "--platform-color": game.theme.platform
         }}
       >
+        <div className="scenery-layer clouds-layer" style={{ transform: `translateX(-${game.cameraX * 0.15}px)` }}>
+          {game.scenery.clouds.map((cloud, idx) => (
+            <div key={`cloud-${idx}`} className="cloud" style={{ left: cloud.x, top: cloud.y, transform: `scale(${cloud.size})` }} />
+          ))}
+        </div>
+        <div className="scenery-layer bushes-layer" style={{ transform: `translateX(-${game.cameraX * 0.3}px)` }}>
+          {game.scenery.bushes.map((bush, idx) => (
+            <div key={`bush-${idx}`} className="bush" style={{ left: bush.x, bottom: 52, transform: `scale(${bush.size})`, transformOrigin: 'bottom center' }} />
+          ))}
+        </div>
         <div className="world" style={{ width: game.worldWidth, transform: `translateX(-${game.cameraX}px)` }}>
           <div className="ground" style={{ top: GROUND_Y, width: game.worldWidth }} />
           {game.platforms.map((platform, idx) => (
@@ -433,16 +476,20 @@ export default function HomePage() {
           {game.enemies.map((enemy, idx) => (
             <div
               key={`enemy-${idx}`}
-              className={`enemy enemy-${enemy.type}`}
+              className={`enemy enemy-${enemy.type} ${enemy.defeated ? 'enemy-defeated' : ''}`}
               style={{ left: enemy.x, top: enemy.y, width: enemy.w, height: enemy.h }}
             />
           ))}
           {game.coinsOnMap
-            .filter((coin) => !coin.collected)
             .map((coin) => (
-              <div key={coin.id} className="coin" style={{ left: coin.x, top: coin.y }} />
+              <div key={coin.id} className={`coin ${coin.collected ? 'coin-collected' : ''}`} style={{ left: coin.x, top: coin.y }} />
             ))}
-          <div className="goal" style={{ left: game.goalX, top: GROUND_Y - 80 }} />
+          {game.floatingTexts && game.floatingTexts.map(ft => (
+            <div key={ft.id} className="floating-text" style={{ left: ft.x, top: ft.y, opacity: ft.timer }}>
+              {ft.text}
+            </div>
+          ))}
+          <div className={`goal ${game.levelComplete ? 'goal-complete' : ''}`} style={{ left: game.goalX, top: GROUND_Y - 160 }} />
           <div
             className={`player ${playerPose} ${playerFacing}`}
             style={{ left: game.player.x, top: game.player.y, width: game.player.w, height: game.player.h }}
@@ -485,22 +532,33 @@ function stepGame(game, keys, dt) {
   const next = structuredClone(game);
   next.elapsed += dt;
   const player = next.player;
-  const isLeft = keys.has("a") || keys.has("arrowleft");
-  const isRight = keys.has("d") || keys.has("arrowright");
-  const isJump = keys.has("w") || keys.has("arrowup") || keys.has(" ");
 
-  player.vx = 0;
-  if (isLeft) {
-    player.vx = -MOVE_SPEED;
-    player.facing = -1;
-  }
-  if (isRight) {
-    player.vx = MOVE_SPEED;
-    player.facing = 1;
-  }
-  if (isJump && player.onGround) {
-    player.vy = JUMP_VELOCITY;
-    player.onGround = false;
+  if (next.levelComplete) {
+    next.completeTimer -= dt;
+    player.vx = 0;
+    if (next.completeTimer <= 0) {
+      const nextLevel = buildLevel(next.level + 1, next.lives, next.coins);
+      nextLevel.statusText = `通关成功！进入第 ${nextLevel.level} 关`;
+      return nextLevel;
+    }
+  } else {
+    const isLeft = keys.has("a") || keys.has("arrowleft");
+    const isRight = keys.has("d") || keys.has("arrowright");
+    const isJump = keys.has("w") || keys.has("arrowup") || keys.has(" ");
+
+    player.vx = 0;
+    if (isLeft) {
+      player.vx = -MOVE_SPEED;
+      player.facing = -1;
+    }
+    if (isRight) {
+      player.vx = MOVE_SPEED;
+      player.facing = 1;
+    }
+    if (isJump && player.onGround) {
+      player.vy = JUMP_VELOCITY;
+      player.onGround = false;
+    }
   }
 
   updateMovingPlatforms(next);
@@ -539,6 +597,7 @@ function stepGame(game, keys, dt) {
   }
 
   for (const enemy of next.enemies) {
+    if (enemy.defeated) continue;
     enemy.x += enemy.speed * enemy.dir * dt;
     if (enemy.x <= enemy.minX) {
       enemy.x = enemy.minX;
@@ -555,16 +614,19 @@ function stepGame(game, keys, dt) {
   const playerBox = { x: player.x, y: player.y, w: player.w, h: player.h };
   for (let i = next.enemies.length - 1; i >= 0; i -= 1) {
     const enemy = next.enemies[i];
+    if (enemy.defeated) continue;
     if (!intersects(playerBox, enemy)) continue;
 
     const stompFromTop = player.vy > 0 && previousBottom <= enemy.y + 9;
     if (stompFromTop) {
-      next.enemies.splice(i, 1);
+      enemy.defeated = true;
       player.y = enemy.y - player.h;
       player.vy = STOMP_BOUNCE_VELOCITY;
       player.onGround = false;
       next.coins += 2;
       next.statusText = "踩怪成功！+2 金币";
+      if (!next.floatingTexts) next.floatingTexts = [];
+      next.floatingTexts.push({ id: Math.random(), x: enemy.x, y: enemy.y, text: "+2", timer: 1 });
       continue;
     }
 
@@ -578,13 +640,24 @@ function stepGame(game, keys, dt) {
       coin.collected = true;
       next.coins += 1;
       next.statusText = "拿到金币！";
+      if (!next.floatingTexts) next.floatingTexts = [];
+      next.floatingTexts.push({ id: Math.random(), x: coin.x, y: coin.y, text: "+1", timer: 1 });
     }
   }
 
-  if (player.x >= next.goalX) {
-    const nextLevel = buildLevel(next.level + 1, next.lives, next.coins);
-    nextLevel.statusText = `通关成功！进入第 ${nextLevel.level} 关`;
-    return nextLevel;
+  if (!next.levelComplete && player.x >= next.goalX) {
+    next.levelComplete = true;
+    next.completeTimer = 2.0;
+    next.statusText = "通关成功！";
+    player.x = next.goalX - 10;
+  }
+
+  if (next.floatingTexts) {
+    next.floatingTexts = next.floatingTexts.filter(ft => {
+      ft.timer -= dt;
+      ft.y -= 40 * dt;
+      return ft.timer > 0;
+    });
   }
 
   next.cameraX = clamp(player.x - VIEWPORT_WIDTH * 0.35, 0, next.worldWidth - VIEWPORT_WIDTH);

@@ -99,8 +99,28 @@ body {
 }
 
 .hud {
+  display: flex;
+  gap: 1.5rem;
   font-weight: 700;
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.75rem;
+  background: #ffffff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  font-size: 1.05rem;
+}
+
+.hud-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hud-theme {
+  font-size: 0.85em;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .viewport {
@@ -125,6 +145,8 @@ body {
   height: 52px;
   background: linear-gradient(#8f6138, var(--ground-color));
   box-shadow: inset 0 8px 0 rgb(255 255 255 / 12%);
+  border-top: 6px solid var(--grass-color);
+  z-index: 5;
 }
 
 .platform {
@@ -132,6 +154,7 @@ body {
   border-radius: 8px;
   background: linear-gradient(#c48747, var(--platform-color));
   box-shadow: inset 0 4px 0 rgb(255 255 255 / 20%);
+  border-top: 4px solid var(--grass-color);
 }
 
 .platform-moving {
@@ -149,34 +172,60 @@ body {
 
 .player {
   position: absolute;
-  border-radius: 8px 8px 6px 6px;
-  background: linear-gradient(#f87171 0 56%, #1f2937 56% 100%);
+  border-radius: 12px 12px 6px 6px;
+  background: #ef4444;
   border: 2px solid #111827;
   transform-origin: center bottom;
   --face: 1;
   transform: scaleX(var(--face));
+  box-shadow: inset -4px -4px 0 rgb(0 0 0 / 20%);
+  z-index: 10;
+}
+
+.player::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: #3b82f6;
+  border-radius: 0 0 4px 4px;
+  border-top: 2px solid #111827;
 }
 
 .player::before {
   content: "";
   position: absolute;
-  top: -7px;
-  left: 3px;
-  width: 18px;
-  height: 8px;
-  border-radius: 8px 8px 2px 2px;
-  background: #dc2626;
+  top: -2px;
+  right: -6px;
+  width: 14px;
+  height: 6px;
+  border-radius: 4px;
+  background: #ef4444;
   border: 2px solid #111827;
 }
 
 .player-eye {
   position: absolute;
-  right: 4px;
-  top: 9px;
+  right: 2px;
+  top: 6px;
   width: 6px;
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   background: #111827;
+  z-index: 2;
+}
+
+.player-eye::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 2px;
+  height: 3px;
+  background: white;
+  border-radius: 50%;
 }
 
 .player.is-right {
@@ -245,21 +294,152 @@ body {
   border-radius: 2px 8px 2px 8px;
 }
 
+.enemy-defeated {
+  animation: enemy-squish 0.3s ease-out forwards;
+}
+
+@keyframes enemy-squish {
+  0% { transform: scale(1, 1); opacity: 1; }
+  100% { transform: scale(1.5, 0.2) translateY(20px); opacity: 0; }
+}
+
+.scenery-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cloud {
+  position: absolute;
+  width: 60px;
+  height: 20px;
+  background: white;
+  border-radius: 20px;
+  opacity: 0.8;
+}
+
+.cloud::before {
+  content: "";
+  position: absolute;
+  top: -15px;
+  left: 10px;
+  width: 30px;
+  height: 30px;
+  background: white;
+  border-radius: 50%;
+}
+
+.cloud::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+}
+
+.bush {
+  position: absolute;
+  width: 80px;
+  height: 30px;
+  background: #22c55e;
+  border-radius: 30px 30px 0 0;
+  border: 2px solid #14532d;
+  border-bottom: none;
+}
+
+.bush::before {
+  content: "";
+  position: absolute;
+  top: -15px;
+  left: 15px;
+  width: 30px;
+  height: 30px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 2px solid #14532d;
+  border-bottom: none;
+  clip-path: polygon(-10% -10%, 110% -10%, 110% 100%, -10% 100%);
+}
+
+.bush::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  right: 15px;
+  width: 24px;
+  height: 24px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 2px solid #14532d;
+  border-bottom: none;
+}
+
 .coin {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
+  width: 16px;
+  height: 20px;
+  border-radius: 50%;
   background: #fbbf24;
-  border: 2px solid #92400e;
+  border: 2px solid #b45309;
+  box-shadow: inset -2px -2px 0 #d97706, inset 2px 2px 0 #fde68a;
+  animation: coin-spin 1s linear infinite;
+  z-index: 6;
+}
+
+.coin-collected {
+  animation: coin-collect 0.4s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes coin-collect {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+}
+
+@keyframes coin-spin {
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(0.2); }
+  100% { transform: scaleX(1); }
 }
 
 .goal {
   position: absolute;
-  width: 20px;
-  height: 80px;
-  background: repeating-linear-gradient(45deg, #ffffff, #ffffff 8px, #e5e7eb 8px, #e5e7eb 16px);
+  width: 8px;
+  height: 160px;
+  background: linear-gradient(90deg, #d1d5db, #9ca3af);
   border: 2px solid #111827;
+  border-radius: 4px;
+  z-index: 5;
+}
+
+.goal::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 40px;
+  height: 30px;
+  background: #22c55e;
+  border: 2px solid #111827;
+  border-radius: 2px;
+  transform-origin: left center;
+  animation: flag-wave 1.5s ease-in-out infinite;
+  transition: top 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.goal-complete::after {
+  top: 126px;
+}
+
+@keyframes flag-wave {
+  0%, 100% { transform: skewY(0deg); }
+  50% { transform: skewY(-10deg); }
 }
 
 .overlay {
@@ -313,16 +493,22 @@ body {
   line-height: 1.25rem;
 }
 
+.floating-text {
+  position: absolute;
+  color: #fbbf24;
+  font-weight: 900;
+  font-size: 1.25rem;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  pointer-events: none;
+  z-index: 20;
+}
+
 @keyframes player-run {
-  0% {
-    transform: translateY(0) scaleX(var(--face));
-  }
-  50% {
-    transform: translateY(-2px) scaleX(var(--face));
-  }
-  100% {
-    transform: translateY(0) scaleX(var(--face));
-  }
+  0% { transform: translateY(0) scaleX(var(--face)) rotate(0deg); }
+  25% { transform: translateY(-3px) scaleX(var(--face)) rotate(5deg); }
+  50% { transform: translateY(0) scaleX(var(--face)) rotate(0deg); }
+  75% { transform: translateY(-3px) scaleX(var(--face)) rotate(-5deg); }
+  100% { transform: translateY(0) scaleX(var(--face)) rotate(0deg); }
 }
 
 @keyframes player-idle {
@@ -336,13 +522,9 @@ body {
 }
 
 @keyframes player-jump {
-  0%,
-  100% {
-    transform: translateY(0) scaleX(var(--face));
-  }
-  50% {
-    transform: translateY(-3px) scaleX(var(--face));
-  }
+  0% { transform: translateY(0) scaleX(var(--face)) rotate(0deg); }
+  50% { transform: translateY(-5px) scaleX(var(--face)) rotate(10deg); }
+  100% { transform: translateY(0) scaleX(var(--face)) rotate(0deg); }
 }
 
 @keyframes enemy-walk {
